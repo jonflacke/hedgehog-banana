@@ -10,21 +10,6 @@ import java.util.Arrays;
  */
 public class EntityTraversalUtility {
 
-    static boolean isFieldOnParameterizedSubEntity(Class clazz, String fieldName) {
-        boolean containsParameterizedType = false;
-        String[] fields = fieldName.split("\\.");
-        Field clazzField = getFieldOnObject(clazz, fields[0]);
-        if (clazzField != null) {
-            Class clazzType = clazzField.getType();
-            if (clazzField.getGenericType() instanceof ParameterizedType) {
-                containsParameterizedType = true;
-            } else if (fields.length > 1) {
-                containsParameterizedType = isFieldOnParameterizedSubEntity(clazzType, rejoinFieldsFromSecondIndex(fields));
-            }
-        }
-        return containsParameterizedType;
-    }
-
     static ClassFieldPath getParameterizedEntityAndRemainingFieldPath(ClassFieldPath parentClassFieldPath) {
         ClassFieldPath childClassFieldPath = null;
         String[] fields = parentClassFieldPath.getFieldPath().split("\\.");

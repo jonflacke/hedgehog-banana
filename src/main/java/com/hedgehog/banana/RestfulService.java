@@ -148,7 +148,7 @@ public class RestfulService<T, ID extends Serializable> {
         Class<T> clazz = (Class<T>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 
         Query query = new Query();
-        searchCriteriaList.stream().forEach(searchCriteria -> query.addCriteria(CriteriaCreator.getCriteria(searchCriteria, clazz)));
+        searchCriteriaList.stream().forEach(searchCriteria -> query.addCriteria(CriteriaCreator.getCriteria(searchCriteria)));
         if (sort != null){
             query.with(sort);
         }
