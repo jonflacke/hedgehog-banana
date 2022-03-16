@@ -12,7 +12,7 @@ public class CriteriaCreator {
 
     private static SearchCriteria searchCriterium;
 
-    public static Criteria getCriteria(SearchCriteria searchCriteria, Class clazz) {
+    public static Criteria getCriteria(SearchCriteria searchCriteria) {
         searchCriterium = searchCriteria;
         Comparator<Map.Entry<SearchOperation, Object>> searchOperationMapComparator = (entry1, entry2) -> {
             return entry1.getKey().compareTo(entry2.getKey());
@@ -23,7 +23,7 @@ public class CriteriaCreator {
         Iterator<Map.Entry<SearchOperation, Object>> iterator = operations.iterator();
         List<String> seenParams = new ArrayList<>();
         Map.Entry<SearchOperation, Object> entry = iterator.next();
-        Criteria returnCriteria = getSearchCriteria(entry, clazz);
+        Criteria returnCriteria = getSearchCriteria(entry);
 
         addSeenParam(seenParams, entry);
 
@@ -31,9 +31,9 @@ public class CriteriaCreator {
             entry = iterator.next();
             if (seenParams.contains(searchCriterium.getKey() + entry.getKey().toString())
                     || (seenParams.contains(searchCriterium.getKey()) && entry.getKey().equals(SearchOperation.NULL))) {
-                returnCriteria = returnCriteria.orOperator(returnCriteria, getSearchCriteria(entry, clazz));
+                returnCriteria = returnCriteria.orOperator(returnCriteria, getSearchCriteria(entry));
             } else {
-                returnCriteria = returnCriteria.andOperator(returnCriteria, getSearchCriteria(entry, clazz));
+                returnCriteria = returnCriteria.andOperator(returnCriteria, getSearchCriteria(entry));
                 addSeenParam(seenParams, entry);
             }
         }
@@ -57,61 +57,32 @@ public class CriteriaCreator {
      * @param clazz the class of object on which to search
      * @return criteria for operation and value
      */
-    private static Criteria getSearchCriteria(Map.Entry<SearchOperation, Object> operationValueEntry, Class clazz) {
-        if (EntityTraversalUtility.isFieldOnParameterizedSubEntity(clazz, searchCriterium.getKey())) {
-            return getParameterizedFieldCriteria(searchCriterium.getKey(), operationValueEntry, clazz);
-        } else {
-            return getNonParameterizedFieldCriteria(searchCriterium.getKey(), operationValueEntry);
-        }
-    }
-
-    private static Criteria getParameterizedFieldCriteria(String pathToEntity, Map.Entry<SearchOperation, Object> operationValueEntry, Class clazz) {
-        /*
-        Get path down to entity
-        return a criteria where path to entity in call to this function
-        To call this function, a search operation entry is needed
-            The search operation should contain everything below found parameterized entity
-            Operator of value entry should be that of topmost entry - the only change should be the path
-        This should repeat until you hit bottom level entity
-        Once you reach the bottom, perform a non-parameterized field criteria call and return that
-         */
-        if (EntityTraversalUtility.isFieldOnParameterizedSubEntity(clazz, pathToEntity)) {
-            ClassFieldPath classAndFieldPathToEntity = EntityTraversalUtility.getParameterizedEntityAndRemainingFieldPath(
-                    new ClassFieldPath(clazz, pathToEntity));
-            String pathToParameterizedEntity = EntityTraversalUtility.getFieldPathToParameterizedEntity(searchCriterium.getKey(), classAndFieldPathToEntity.getFieldPath());
-            // create a criteria with where-in and add as it's "in" a call to this function
-            return Criteria.where(pathToParameterizedEntity).in(getParameterizedFieldCriteria(classAndFieldPathToEntity.getFieldPath(), operationValueEntry, classAndFieldPathToEntity.getClazz()));
-        } else {
-            // Build final query and return it back
-            return getNonParameterizedFieldCriteria(pathToEntity, operationValueEntry);
-        }
-    }
-
-    private static Criteria getNonParameterizedFieldCriteria(String pathToEntity, Map.Entry<SearchOperation, Object> operationValueEntry) {
+    private static Criteria getSearchCriteria(Map.Entry<SearchOperation, Object> operationValueEntry) {
         final String value = operationValueEntry.getValue().toString();
         switch (operationValueEntry.getKey()) {
             case LIKE:
                 // Using "i" for case insensitivity - this is just default and may not be desired
                 // Find way of indicating whether this is desired then pass correct option to regex
-                return Criteria.where(pathToEntity).regex(".*".concat(value).concat(".*"), "i");
+                return Criteria.where(searchCriterium.getKey()).regex(".*".concat(value).concat(".*"), "i");
             case STARTS:
-                return Criteria.where(pathToEntity).regex("^".concat(value), "i");
+                return Criteria.where(searchCriterium.getKey()).regex("^".concat(value), "i");
             case ENDS:
-                return Criteria.where(pathToEntity).regex(value.concat("$"), "i");
+                return Criteria.where(searchCriterium.getKey()).regex(value.concat("$"), "i");
             case EQUALS:
-                return Criteria.where(pathToEntity).is(value);
+                return Criteria.where(searchCriterium.getKey()).is(value);
             case NOT_EQUAL:
-                return Criteria.where(pathToEntity).ne(value);
+                return Criteria.where(searchCriterium.getKey()).ne(value);
             case LESS_THAN:
-                return Criteria.where(pathToEntity).lt(value);
+                return Criteria.where(searchCriterium.getKey()).lt(value);
             case GREATER_THAN:
-                return Criteria.where(pathToEntity).gt(value);
+                return Criteria.where(searchCriterium.getKey()).gt(value);
             case NULL:
-                return Criteria.where(pathToEntity).is(null);
+                return Criteria.where(searchCriterium.getKey()).is(null);
             case NOT_NULL:
-                return Criteria.where(pathToEntity).not().is(null);
+                return Criteria.where(searchCriterium.getKey()).not().is(null);
             default:
                 return null;
         }
     }
+
 }
