@@ -29,7 +29,7 @@ public class RestfulService<T, ID extends Serializable> {
 
     @Autowired
     private MongoTemplate mongoTemplate;
-    private   Class<T>    classType;
+    private   Class<T>                   classType;
 
     public RestfulService(BaseMongoRepository<T, ID> baseMongoRepository) {
         this.baseMongoRepository = baseMongoRepository;
@@ -145,7 +145,6 @@ public class RestfulService<T, ID extends Serializable> {
     }
 
     private List<T> getObjectsFromCriteriaList(List<SearchCriteria> searchCriteriaList, Sort sort, PageRequest pageRequest) {
-        Class<T> clazz = (Class<T>) ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 
         Query query = new Query();
         searchCriteriaList.stream().forEach(searchCriteria -> query.addCriteria(CriteriaCreator.getCriteria(searchCriteria)));
@@ -155,7 +154,7 @@ public class RestfulService<T, ID extends Serializable> {
         if (pageRequest != null) {
             query.with(pageRequest);
         }
-        return mongoTemplate.find(query, clazz);
+        return mongoTemplate.find(query, classType);
     }
 
     private void createOperationForEachParameterValue(Map<String, String[]> parameters, Map<String,
@@ -163,6 +162,9 @@ public class RestfulService<T, ID extends Serializable> {
                                                       String fieldName, String specifiedOperation) {
         for (String value : parameters.get(key)) {
             if (isNonPredicateKey) {
+                // TODO Non-predicate keys are going to be tougher to deal with. You probably shouldn't have deleted the code from before
+                // regardless, they need to be address differently - either with an "in" or something similar where you search for all, sort in proper direction
+                // and then limit 1 for least/max. That isn't handled anywhere yet and needs done differently than before.
                 SearchOperation searchOperation = this.getSearchOperation(actionSpecifier, value);
                 this.validateSearchOperationOnParameterType(searchOperation, EntityTraversalUtility.getDeepestFieldOnObject(this.classType, value));
                 if (searchCriteriaMap.containsKey(searchOperation.name())) {
